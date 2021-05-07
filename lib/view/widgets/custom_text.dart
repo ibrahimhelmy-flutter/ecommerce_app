@@ -5,13 +5,14 @@ class CustomText extends StatelessWidget {
   final double fontSize;
   final Color color;
   final Alignment alignment;
+  final FontWeight fontWeight;
 
   const CustomText(
       {Key key,
       this.text = "",
       this.fontSize = 16,
       this.color = Colors.black,
-      this.alignment = Alignment.topLeft})
+      this.alignment = Alignment.topLeft,this.fontWeight})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -19,7 +20,8 @@ class CustomText extends StatelessWidget {
       alignment: alignment,
       child: Text(
         text,
-        style: TextStyle(fontSize: fontSize, color: color),
+        style:
+            TextStyle(fontSize: fontSize, color: color, fontWeight: fontWeight),
       ),
     );
   }
