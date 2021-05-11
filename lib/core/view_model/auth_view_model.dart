@@ -1,8 +1,9 @@
 import 'dart:convert';
 
 import 'package:ecommerce_app/core/services/firestore_user.dart';
+import 'package:ecommerce_app/helper/local_storage_data.dart';
 import 'package:ecommerce_app/model/user_model.dart';
-import 'package:ecommerce_app/view/home_view.dart';
+import 'package:ecommerce_app/view/control_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
@@ -14,6 +15,8 @@ class AuthViewModel extends GetxController {
   GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
   FirebaseAuth _auth = FirebaseAuth.instance;
   FacebookLogin _facebookLogin = FacebookLogin();
+
+  final LocalStorageData localStorageData = Get.find();
 
   String email, password, name;
 
@@ -40,13 +43,11 @@ class AuthViewModel extends GetxController {
         idToken: googleSignInAuthentication.idToken,
         accessToken: googleSignInAuthentication.accessToken);
 
-    await _auth.signInWithCredential(credential)
-      .then((user) async {
+    await _auth.signInWithCredential(credential).then((user) async {
 //firestore Cloud
-        await saveUserToFirestore(user);
-      Get.offAll(() => HomeScreen());
-
-      });
+      await saveUserToFirestore(user);
+      Get.offAll(() => ControllView());
+    });
   }
 
   void faceboksignInMethod() async {
@@ -62,13 +63,11 @@ class AuthViewModel extends GetxController {
         final faceCridental =
             FacebookAuthProvider.credential(accessToken.token);
 
-        await _auth.signInWithCredential(faceCridental)
-          .then((user) async {
+        await _auth.signInWithCredential(faceCridental).then((user) async {
 //firestore Cloud
-        await saveUserToFirestore(user);
-      Get.offAll(() => HomeScreen());
-
-      });
+          await saveUserToFirestore(user);
+          Get.offAll(() => ControllView());
+        });
 
         final profile = jsonDecode(graphResponse.body);
         print(profile);
@@ -102,14 +101,16 @@ class AuthViewModel extends GetxController {
     print("$email   $password");
 
     try {
-      await _auth.signInWithEmailAndPassword(
-          email: email.trim(), password: password.trim())
-       .then((user) async {
-//firestore Cloud
-        await saveUserToFirestore(user);
-      Get.offAll(() => HomeScreen());
-
+      await _auth
+          .signInWithEmailAndPassword(
+              email: email.trim(), password: password.trim())
+          .then((user) async {
+            //get cureent user
+        await FirestoreUser().getCurrentUser(user.user.uid).then((value) {
+          setuserToShared(UserModel.fromjson(value.data()));
+        });
       });
+      Get.offAll(() => ControllView());
     } catch (e) {
       Get.snackbar("Error login Account", e.message,
           snackPosition: SnackPosition.BOTTOM, colorText: Colors.black);
@@ -118,18 +119,16 @@ class AuthViewModel extends GetxController {
 
   void createUserEmailPassword() async {
     print("$email   $password");
-
     try {
       await _auth
           .createUserWithEmailAndPassword(
               email: email.trim(), password: password.trim())
           .then((user) async {
-//firestore Cloud
+        //firestore Cloud
         await saveUserToFirestore(user);
-      Get.offAll(() => HomeScreen());
-
       });
 
+      Get.offAll(() => ControllView());
     } catch (e) {
       Get.snackbar("Error Sign Up Account", e.message,
           snackPosition: SnackPosition.BOTTOM, colorText: Colors.black);
@@ -137,11 +136,18 @@ class AuthViewModel extends GetxController {
   }
 
   Future<void> saveUserToFirestore(UserCredential user) async {
-    
     //firestore Cloud
     UserModel userModwl = UserModel(
-        userId: user.user.uid, email: user.user.email, name: name==null?user.user.displayName:name, pic: "");
-    
+        userId: user.user.uid,
+        email: user.user.email,
+        name: name == null ? user.user.displayName : name,
+        pic: "");
+
     await FirestoreUser().adduserToFireStore(userModwl);
+    setuserToShared(userModwl);
+  }
+
+  void setuserToShared(UserModel user) async {
+    await localStorageData.setUser(user);
   }
 }

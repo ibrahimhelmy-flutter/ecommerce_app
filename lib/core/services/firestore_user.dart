@@ -8,4 +8,8 @@ class FirestoreUser {
   Future<void> adduserToFireStore(UserModel userModel) async {
     return await _userReference.doc(userModel.userId).set(userModel.tojson());
   }
+
+  Future<DocumentSnapshot> getCurrentUser(String uid) async {
+    return await _userReference.doc(uid).get();
+  }
 }

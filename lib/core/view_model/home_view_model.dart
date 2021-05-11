@@ -1,31 +1,46 @@
-import 'package:ecommerce_app/view/cart_view.dart';
-import 'package:ecommerce_app/view/home_view.dart';
-import 'package:ecommerce_app/view/profile_view.dart';
+import 'package:ecommerce_app/core/services/home_services.dart';
+import 'package:ecommerce_app/model/product_model.dart';
 import 'package:flutter/cupertino.dart';
+
+import '../../model/category_model.dart';
+
 import 'package:get/get.dart';
 
 class HomeViewModel extends GetxController {
-  int _navigatorValue = 0;
-  Widget _currentScreen = HomeScreen();
+  ValueNotifier<bool> _isLoading = ValueNotifier(false);
+  ValueNotifier<bool> get isLoading => _isLoading;
+  List<CategoryModel> _categorymodels = [];
+  List<CategoryModel> get categoris => _categorymodels;
 
-  get navigatorvalue => _navigatorValue;
+  List<ProductModel> _products = [];
+  List<ProductModel> get products => _products; 
 
-  get currentScreen => _currentScreen;
+//in this constactor we should call  all methods
+  HomeViewModel() {
+    getCategory();
+    getBestSelling();
+  }
 
-  void changeNavigatorValue(int selectedNavigator) {
-    _navigatorValue = selectedNavigator;
-    switch (selectedNavigator) {
-      case 0:
-        _currentScreen = HomeScreen();
-        break;
-      case 1:
-        _currentScreen = CartView();
-        break;
-      case 2:
-        _currentScreen = ProfileView();
-        break;
-    }
+  void getCategory() async {
+    _isLoading.value = true;
+    await HomeServices().getCategory().then((docs) {
+      for (var item in docs) {
+        categoris.add(CategoryModel.fromjson(item.data()));
+      }
+      _isLoading.value = false;
+      update();
+    });
+  }
 
-    update();
+  void getBestSelling() async {
+    _isLoading.value = true;
+
+    await HomeServices().getProduct().then((docs) {
+      for (var item in docs) {
+        _products.add(ProductModel.fromJson(item.data()));
+      }
+      _isLoading.value = false;
+      update();
+    });
   }
 }
